@@ -1,10 +1,14 @@
-/**
- * WhatIfScenario Component
- * Lets users test demand change scenarios (e.g. +20% demand)
- * and see the impact on wait times and staffing needs.
- */
 import React, { useState, useEffect } from "react";
 import { runWhatIfScenario } from "../api";
+
+const UNSTABLE_THRESHOLD = 100000; // matches backend's UNSTABLE_WAIT_TIME cap
+
+function formatWaitTime(minutes) {
+  if (minutes >= UNSTABLE_THRESHOLD) {
+    return "∞ (system overloaded)";
+  }
+  return `${minutes} min`;
+}
 
 export default function WhatIfScenario({ baseline }) {
   const [currentServers, setCurrentServers] = useState(4);
@@ -13,7 +17,6 @@ export default function WhatIfScenario({ baseline }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  // Auto-populate current servers from staffing calculator result if available
   useEffect(() => {
     if (baseline?.recommended) {
       setCurrentServers(baseline.recommended);
@@ -113,7 +116,7 @@ export default function WhatIfScenario({ baseline }) {
               </div>
               <div className="comparison-stat">
                 <span>Avg Wait</span>
-                <strong>{result.current_scenario.avg_wait_time_minutes} min</strong>
+                <strong>{formatWaitTime(result.current_scenario.avg_wait_time_minutes)}</strong>
               </div>
               <div className={`status-badge ${result.current_scenario.meets_target ? "good" : "bad"}`}>
                 {result.current_scenario.meets_target ? "✅ Meets Target" : "❌ Below Target"}
@@ -136,11 +139,7 @@ export default function WhatIfScenario({ baseline }) {
               </div>
               <div className="comparison-stat">
                 <span>Avg Wait</span>
-                <strong>
-                  {result.projected_scenario.avg_wait_time_minutes === Infinity
-                    ? "∞ (overloaded)"
-                    : `${result.projected_scenario.avg_wait_time_minutes} min`}
-                </strong>
+                <strong>{formatWaitTime(result.projected_scenario.avg_wait_time_minutes)}</strong>
               </div>
               <div className={`status-badge ${result.projected_scenario.meets_target ? "good" : "bad"}`}>
                 {result.projected_scenario.meets_target ? "✅ Meets Target" : "❌ Below Target"}
